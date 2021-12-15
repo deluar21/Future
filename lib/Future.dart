@@ -1,27 +1,118 @@
-/** Uncomplete */
+import 'package:flutter/material.dart';
 
-// void main(List<String> args) {
-//   Future.delayed(Duration(seconds: 3),
-//   () => 'Hello World',
-//   );
-// }
-
-/** Complete with value */
-
-// void main(List<String> args) {
-//   Future.delayed(Duration(seconds: 1),
-//   () => 'Hello World',
-//   ).then((value) => print(value));
-
-//   print('Waiting...');
-// }
-
-/** Complete with Error */
 void main(List<String> args) {
-  Future.delayed(
-    Duration(seconds: 3),
-    () => throw 'try again',
-  ).then((value) => print(value)).catchError((err) => print('Error $err'));
+  runApp(MaterialApp(
+    debugShowCheckedModeBanner: false,
+    home: MyFuture(),
+  ));
+}
 
-  print('Waiting...');
+class MyFuture extends StatefulWidget {
+  const MyFuture({Key? key}) : super(key: key);
+
+  @override
+  _MyFutureState createState() => _MyFutureState();
+}
+
+class _MyFutureState extends State<MyFuture> {
+  final Stream<int> _bids = (() async* {
+    await Future<void>.delayed(const Duration(seconds: 1));
+    yield 1;
+    await Future<void>.delayed(const Duration(seconds: 1));
+  })();
+
+  @override
+  Widget build(BuildContext context) {
+    return DefaultTextStyle(
+      style: Theme.of(context).textTheme.headline2!,
+      textAlign: TextAlign.center,
+      child: Container(
+        alignment: FractionalOffset.center,
+        color: Colors.white,
+        child: StreamBuilder<int>(
+          stream: _bids,
+          builder: (BuildContext context, AsyncSnapshot<int> snapshot) {
+            List<Widget> children;
+            if (snapshot.hasError) {
+              children = <Widget>[
+                const Icon(
+                  Icons.error_outline,
+                  color: Colors.red,
+                  size: 60,
+                ),
+                Padding(
+                  padding: const EdgeInsets.only(top: 16),
+                  child: Text('Error: ${snapshot.error}'),
+                ),
+                Padding(
+                  padding: const EdgeInsets.only(top: 8),
+                  child: Text('Stack trace: ${snapshot.stackTrace}'),
+                ),
+              ];
+            } else {
+              switch (snapshot.connectionState) {
+                case ConnectionState.none:
+                  children = const <Widget>[
+                    Icon(
+                      Icons.info,
+                      color: Colors.blue,
+                      size: 60,
+                    ),
+                    Padding(
+                      padding: EdgeInsets.only(top: 16),
+                      child: Text('Select a lot'),
+                    )
+                  ];
+                  break;
+                case ConnectionState.waiting:
+                  children = const <Widget>[
+                    SizedBox(
+                      width: 60,
+                      height: 60,
+                      child: CircularProgressIndicator(),
+                    ),
+                    Padding(
+                      padding: EdgeInsets.only(top: 16),
+                      child: Text('Awaiting bids...'),
+                    )
+                  ];
+                  break;
+                case ConnectionState.active:
+                  children = <Widget>[
+                    const Icon(
+                      Icons.check_circle_outline,
+                      color: Colors.green,
+                      size: 60,
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.only(top: 16),
+                      child: Text('\$${snapshot.data}'),
+                    )
+                  ];
+                  break;
+                case ConnectionState.done:
+                  children = <Widget>[
+                    const Icon(
+                      Icons.info,
+                      color: Colors.blue,
+                      size: 60,
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.only(top: 16),
+                      child: Text('\$${snapshot.data} (closed)'),
+                    )
+                  ];
+                  break;
+              }
+            }
+
+            return Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: children,
+            );
+          },
+        ),
+      ),
+    );
+  }
 }
